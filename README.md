@@ -15,7 +15,7 @@ Set `JT_VAULT_DIR` to the checked-out private vault and `JT_KEY_FILE` to a `0600
 ## Use
 
 ```sh
-jt add --id OPENAI_API_KEY
+jt add mom/OPENAI_API_KEY
 jt ls
 jt resolve jt://secret/<id> --exec env VAR_NAME
 jt env mom -- your-command
