@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	version = "0.1.0"
+	version = "0.1.1"
 	prefix  = "jt://secret/"
 )
 
@@ -639,6 +639,13 @@ func runGit(dir string, args ...string) error {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+func remoteHasHeads(dir string) bool {
+	cmd := exec.Command("git", "-C", dir, "ls-remote", "--exit-code", "--heads", "origin")
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run() == nil
+}
+
 func syncVault(args []string) error {
 	if len(args) > 0 {
 		return errors.New("sync takes no arguments")
@@ -650,8 +657,10 @@ func syncVault(args []string) error {
 	if _, err := os.Stat(filepath.Join(c.Vault, ".git")); err != nil {
 		return errors.New("vault is not a git repository; run jt init --repo URL")
 	}
-	if err := runGit(c.Vault, "pull", "--rebase", "--autostash", "origin"); err != nil {
-		return err
+	if remoteHasHeads(c.Vault) {
+		if err := runGit(c.Vault, "pull", "--rebase", "--autostash", "origin"); err != nil {
+			return err
+		}
 	}
 	if err := runGit(c.Vault, "add", "vault.json"); err != nil {
 		return err
