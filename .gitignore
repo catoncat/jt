@@ -1,0 +1,5 @@
+# Local build output and configuration
+/bin/
+dist/
+*.test
+.DS_Store

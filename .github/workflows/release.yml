@@ -1,0 +1,38 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: darwin
+            goarch: arm64
+            asset: jt-darwin-arm64
+          - goos: linux
+            goarch: amd64
+            asset: jt-linux-amd64
+          - goos: linux
+            goarch: arm64
+            asset: jt-linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -trimpath -ldflags '-s -w' -o '${{ matrix.asset }}' ./cmd/jt
+      - name: Checksums
+        run: sha256sum '${{ matrix.asset }}' > '${{ matrix.asset }}.sha256'
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sha256
