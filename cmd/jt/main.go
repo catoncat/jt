@@ -64,6 +64,8 @@ func main() {
 		err = rename(os.Args[2:])
 	case "resolve":
 		err = resolve(os.Args[2:])
+	case "env":
+		err = env(os.Args[2:])
 	case "init":
 		err = initVault(os.Args[2:])
 	case "sync":
@@ -84,7 +86,7 @@ func main() {
 	}
 }
 func usage() {
-	fmt.Print("jt - encrypted, syncable secret references\n\nUsage:\n  jt init [--repo URL] [--vault DIR] [--key FILE]\n  jt add <name> [--from-clipboard] [--id ID]\n  jt ls [query]\n  jt set <name-or-ref> [--from-clipboard]\n  jt rm <name-or-ref>\n  jt mv <name-or-ref> <new-name>\n  jt resolve <name-or-ref> [--env NAME] --exec COMMAND [ARGS...]\n  jt sync\n\nValues for add/set are read from stdin unless --from-clipboard is used.\nresolve without --exec prints the value and is intended for controlled use only.\n")
+	fmt.Print("jt - encrypted, syncable secret references\n\nUsage:\n  jt init [--repo URL] [--vault DIR] [--key FILE]\n  jt add <name> [--from-clipboard] [--id ID]\n  jt ls [query]\n  jt set <name-or-ref> [--from-clipboard]\n  jt rm <name-or-ref>\n  jt mv <name-or-ref> <new-name>\n  jt resolve <name-or-ref> [--env NAME] --exec COMMAND [ARGS...]\n  jt env <namespace> -- COMMAND [ARGS...]\n  jt sync\n\nValues for add/set are read from stdin unless --from-clipboard is used.\nresolve without --exec prints the value and is intended for controlled use only.\n")
 }
 func paths() (string, string, string) {
 	home, err := os.UserHomeDir()
@@ -574,6 +576,55 @@ func resolve(args []string) error {
 type exitStatusError struct{ code int }
 
 func (e exitStatusError) Error() string { return fmt.Sprintf("command exited with status %d", e.code) }
+func env(args []string) error {
+	if len(args) < 3 || args[1] != "--" {
+		return errors.New("env needs <namespace> -- COMMAND [ARGS...]")
+	}
+	namespace := args[0]
+	c, err := loadConfig()
+	if err != nil {
+		return err
+	}
+	v, key, err := openVault(c, false)
+	if err != nil {
+		return err
+	}
+	environment := append([]string{}, os.Environ()...)
+	injected := 0
+	for _, item := range v.Secrets {
+		if !strings.HasPrefix(item.Name, namespace+"/") {
+			continue
+		}
+		name := strings.TrimPrefix(item.Name, namespace+"/")
+		if !envPattern.MatchString(name) {
+			return fmt.Errorf("invalid environment variable name in vault: %s", name)
+		}
+		value, err := open(key, item.Ciphertext)
+		if err != nil {
+			return err
+		}
+		environment = append(environment, name+"="+value)
+		injected++
+	}
+	if injected == 0 {
+		return fmt.Errorf("no secrets found for namespace %q", namespace)
+	}
+	command := args[2:]
+	cmd := exec.Command(command[0], command[1:]...)
+	cmd.Env = environment
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+				return exitStatusError{status.ExitStatus()}
+			}
+		}
+		return err
+	}
+	return nil
+}
+
 func initVault(args []string) error {
 	c, err := loadConfig()
 	if err != nil {
