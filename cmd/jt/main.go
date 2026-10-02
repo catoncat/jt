@@ -842,7 +842,7 @@ func initVault(args []string) error {
 	if err := saveConfig(c); err != nil {
 		return err
 	}
-	if _, err := loadKey(c.Key, true); err != nil {
+	if _, err := loadKeyForVault(c.Key, filepath.Join(c.Vault, "vault.json"), true); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.Vault, 0700); err != nil {
