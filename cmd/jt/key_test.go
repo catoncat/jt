@@ -65,3 +65,63 @@ func TestInitDoesNotCreateReplacementKeyForExistingVault(t *testing.T) {
 	}
 	assertMissingKeyDidNotWrite(t, keyPath, vaultDir, before)
 }
+
+func freshHome(t *testing.T) (string, string) {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("JT_HOME", home)
+	t.Setenv("JT_VAULT_DIR", "")
+	t.Setenv("JT_KEY_FILE", "")
+	_, vaultDir, keyPath := paths()
+	return vaultDir, keyPath
+}
+
+func assertSyntheticEntry(t *testing.T, vaultDir, keyPath string) {
+	t.Helper()
+	c := config{Vault: vaultDir, Key: keyPath}
+	v, key, err := openVault(c, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(v.Secrets) != 1 {
+		t.Fatalf("want one secret, got %d", len(v.Secrets))
+	}
+	value, err := open(key, v.Secrets[0].Ciphertext)
+	if err != nil || value != "synthetic-new-secret" {
+		t.Fatalf("could not decrypt newly added synthetic secret: value %q, error %v", value, err)
+	}
+}
+
+func TestAddCreatesKeyForNewVault(t *testing.T) {
+	vaultDir, keyPath := freshHome(t)
+	input(t, "synthetic-new-secret\n")
+	if err := add([]string{"app/KEY"}); err != nil {
+		t.Fatal(err)
+	}
+	key, err := os.ReadFile(keyPath)
+	if err != nil || len(key) != 32 {
+		t.Fatalf("new vault key: got %d bytes, error %v", len(key), err)
+	}
+	assertSyntheticEntry(t, vaultDir, keyPath)
+}
+
+func TestInitCreatesKeyForNewVaultAndAddReusesIt(t *testing.T) {
+	vaultDir, keyPath := freshHome(t)
+	if err := initVault(nil); err != nil {
+		t.Fatal(err)
+	}
+	keyBefore, err := os.ReadFile(keyPath)
+	if err != nil || len(keyBefore) != 32 {
+		t.Fatalf("initialized vault key: got %d bytes, error %v", len(keyBefore), err)
+	}
+
+	input(t, "synthetic-new-secret\n")
+	if err := add([]string{"app/KEY"}); err != nil {
+		t.Fatal(err)
+	}
+	keyAfter, err := os.ReadFile(keyPath)
+	if err != nil || !bytes.Equal(keyAfter, keyBefore) {
+		t.Fatalf("add did not reuse the initialized key: error %v", err)
+	}
+	assertSyntheticEntry(t, vaultDir, keyPath)
+}
