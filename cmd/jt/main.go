@@ -166,19 +166,19 @@ func loadKey(path string, create bool) ([]byte, error) {
 	}
 	return data, nil
 }
-// loadKeyForVault only generates a missing key when there is no local vault file yet.
-// A fresh key cannot decrypt existing ciphertext, so replacing a missing key in place
-// would silently make every existing secret unusable.
+// loadKeyForVault only generates a missing key if the vault file is absent.
+// Existing ciphertext cannot be decrypted with a fresh key.
 func loadKeyForVault(keyPath, vaultPath string, create bool) ([]byte, error) {
 	if !create {
 		return loadKey(keyPath, false)
 	}
-	if _, err := os.Stat(vaultPath); err == nil {
-		return loadKey(keyPath, false)
-	} else if !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(vaultPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return loadKey(keyPath, true)
+		}
 		return nil, err
 	}
-	return loadKey(keyPath, true)
+	return loadKey(keyPath, false)
 }
 
 func openVault(c config, create bool) (vault, []byte, error) {
