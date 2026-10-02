@@ -6,9 +6,26 @@
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/catoncat/jt/main/install.sh | sh
-jt init
+```
+
+For sync with a new vault, first create an empty private Git repository, then use its URL:
+
+```sh
+jt init --repo <YOUR_PRIVATE_VAULT_GIT_URL>
 jt sync
 ```
+
+On a fresh setup, `jt init` without `--repo` creates a local Git repository but does not add an `origin`, so skip `jt sync` until one is configured. To connect that local-only vault later, add an empty private remote with `git -C <VAULT_DIR> remote add origin <YOUR_PRIVATE_VAULT_GIT_URL>` before syncing.
+
+For an existing vault repository, clone it into the chosen vault directory and point `jt` at the clone, using the matching local master-key file:
+
+```sh
+git clone <YOUR_PRIVATE_VAULT_GIT_URL> <VAULT_DIR>
+jt init --vault <VAULT_DIR> --key <PATH_TO_EXISTING_MASTER_KEY>
+jt sync
+```
+
+The key file must be the existing 32-byte key for a vault that already contains `vault.json`; `jt` will not generate a replacement key for it.
 
 The installer downloads a published GitHub release; a change on `main` does not publish a release. To build this source version (0.3.0), use Go 1.24 or newer and `go build -o bin/jt ./cmd/jt`. Check `jt version` on every client before enabling descriptions.
 
