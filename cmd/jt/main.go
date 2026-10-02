@@ -704,6 +704,9 @@ func resolve(args []string) error {
 				return errors.New("--env needs a name")
 			}
 			envName = rest[i+1]
+			if !envPattern.MatchString(envName) {
+				return errors.New("invalid environment variable name")
+			}
 			i++
 		case "--exec":
 			command = rest[i+1:]
@@ -718,9 +721,6 @@ func resolve(args []string) error {
 	if len(command) == 0 {
 		fmt.Println(value)
 		return nil
-	}
-	if !envPattern.MatchString(envName) {
-		return errors.New("invalid environment variable name")
 	}
 	var cmd *exec.Cmd
 	if len(command) == 1 {
