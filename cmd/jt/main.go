@@ -877,10 +877,18 @@ func syncVault(args []string) error {
 	if _, err := os.Stat(filepath.Join(c.Vault, ".git")); err != nil {
 		return errors.New("vault is not a git repository; run jt init --repo URL")
 	}
+	if err := checkSyncConflicts(c.Vault); err != nil {
+		return err
+	}
 	if remoteHasHeads(c.Vault) {
 		if err := runGit(c.Vault, "pull", "--rebase", "--autostash", "origin"); err != nil {
 			return err
 		}
+	}
+	// Git can exit successfully after pulling even if applying its autostash
+	// leaves conflicts. Do not stage conflict markers as a resolved vault.
+	if err := checkSyncConflicts(c.Vault); err != nil {
+		return err
 	}
 	if err := runGit(c.Vault, "add", "vault.json"); err != nil {
 		return err
@@ -892,6 +900,17 @@ func syncVault(args []string) error {
 		}
 	}
 	return runGit(c.Vault, "push", "origin", "HEAD")
+}
+
+func checkSyncConflicts(dir string) error {
+	unmerged, err := gitOutput(dir, "ls-files", "--unmerged")
+	if err != nil {
+		return fmt.Errorf("check sync conflicts: %w", err)
+	}
+	if unmerged != "" {
+		return errors.New("sync stopped: unresolved Git conflicts; resolve them before syncing again")
+	}
+	return nil
 }
 
 type vaultStatus struct {
