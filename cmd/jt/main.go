@@ -166,12 +166,28 @@ func loadKey(path string, create bool) ([]byte, error) {
 	}
 	return data, nil
 }
+
+// loadKeyForVault only generates a missing key if the vault file is absent.
+// Existing ciphertext cannot be decrypted with a fresh key.
+func loadKeyForVault(keyPath, vaultPath string, create bool) ([]byte, error) {
+	if !create {
+		return loadKey(keyPath, false)
+	}
+	if _, err := os.Stat(vaultPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return loadKey(keyPath, true)
+		}
+		return nil, err
+	}
+	return loadKey(keyPath, false)
+}
+
 func openVault(c config, create bool) (vault, []byte, error) {
-	key, err := loadKey(c.Key, create)
+	path := filepath.Join(c.Vault, "vault.json")
+	key, err := loadKeyForVault(c.Key, path, create)
 	if err != nil {
 		return vault{}, nil, fmt.Errorf("load key: %w", err)
 	}
-	path := filepath.Join(c.Vault, "vault.json")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) && create {
 		return vault{Version: 1, Secrets: []entry{}}, key, nil
@@ -827,7 +843,7 @@ func initVault(args []string) error {
 	if err := saveConfig(c); err != nil {
 		return err
 	}
-	if _, err := loadKey(c.Key, true); err != nil {
+	if _, err := loadKeyForVault(c.Key, filepath.Join(c.Vault, "vault.json"), true); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.Vault, 0700); err != nil {
