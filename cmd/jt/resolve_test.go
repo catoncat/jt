@@ -78,3 +78,33 @@ func TestResolveExplicitPlaintextAndExecModes(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveEnvRejectsInvalidNameWithoutExposingSecret(t *testing.T) {
+	const value = "synthetic-resolve-test-secret"
+	ciphertext, err := seal(bytes.Repeat([]byte{1}, 32), value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	setup(t, []entry{{ID: "Abcd1234", Name: "app/KEY", Ciphertext: ciphertext}})
+	for _, args := range [][]string{
+		{"app/KEY", "--env"},
+		{"app/KEY", "--env", "--exec"},
+		{"app/KEY", "--env", "--env"},
+		{"app/KEY", "--env", ""},
+		{"app/KEY", "--env", "BAD-NAME"},
+		{"app/KEY", "--env", "TOKEN", "--env", "--exec"},
+		{"app/KEY", "--env", "--exec", "true"},
+		{"app/KEY", "--env", "", "--exec", "true"},
+		{"app/KEY", "--env", "BAD-NAME", "--exec", "true"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			output, err := captureResolveOutput(t, args)
+			if err == nil {
+				t.Error("expected invalid or missing environment name error")
+			}
+			if output != "" {
+				t.Errorf("invalid --env emitted output: %q", output)
+			}
+		})
+	}
+}
