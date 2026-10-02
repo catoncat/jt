@@ -166,6 +166,7 @@ func loadKey(path string, create bool) ([]byte, error) {
 	}
 	return data, nil
 }
+
 // loadKeyForVault only generates a missing key if the vault file is absent.
 // Existing ciphertext cannot be decrypted with a fresh key.
 func loadKeyForVault(keyPath, vaultPath string, create bool) ([]byte, error) {
