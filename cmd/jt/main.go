@@ -707,6 +707,9 @@ func resolve(args []string) error {
 			i++
 		case "--exec":
 			command = rest[i+1:]
+			if len(command) == 0 || command[0] == "" {
+				return errors.New("--exec needs a command")
+			}
 			i = len(rest)
 		default:
 			return fmt.Errorf("unexpected argument %q", rest[i])
