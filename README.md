@@ -74,6 +74,14 @@ make cross
 
 Tests use temporary keys, vaults, and local Git remotes; they do not need or modify a real vault.
 
+## Agent skill
+
+`skills/jiantieban-secret/SKILL.md` teaches an agent to consume `jt://secret/<id>` references via `jt resolve --exec` (value goes only into the child process environment) and to name records with `jt mv`. Link or copy that directory into your agent's skills directory, e.g.:
+
+```sh
+ln -s "$PWD/skills/jiantieban-secret" ~/.agents/skills/jiantieban-secret
+```
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
