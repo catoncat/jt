@@ -80,7 +80,7 @@ func main() {
 		err = syncVault(os.Args[2:])
 	case "status":
 		err = status(os.Args[2:])
-	case "version":
+	case "version", "--version", "-v":
 		fmt.Println("jt " + version)
 	case "help", "--help", "-h":
 		usage()
@@ -96,7 +96,7 @@ func main() {
 	}
 }
 func usage() {
-	fmt.Print("jt - encrypted, syncable secret references\n\nUsage:\n  jt init [--repo URL] [--vault DIR] [--key FILE]\n  jt add <name> [--from-clipboard] [--id ID] [--description TEXT]\n  jt ls [--json] [query]\n  jt set <name-or-ref> [--from-clipboard] [--description TEXT]\n  jt describe <name-or-ref> <description>\n  jt rm <name-or-ref>\n  jt mv <name-or-ref> <new-name>\n  jt resolve <name-or-ref> [--env NAME] --exec COMMAND [ARGS...]\n  jt env <namespace> -- COMMAND [ARGS...]\n  jt sync\n  jt status [--json]\n\nValues for add/set are read from stdin unless --from-clipboard is used.\nresolve without --exec prints the value and is intended for controlled use only.\ndescribe edits only metadata; pass an empty string to clear the description.\nDescriptions are plaintext, synced metadata; never put secrets in them.\nThe first nonempty description upgrades the vault to v2; upgrade all clients first.\nls --json prints id, ref, name, description, preview and timestamps; never ciphertext.\nstatus reports local vault state (uncommitted changes, commits not pushed) without network access.\n")
+	fmt.Print("jt - encrypted, syncable secret references\n\nUsage:\n  jt init [--repo URL] [--vault DIR] [--key FILE]\n  jt add <name> [--from-clipboard] [--id ID] [--description TEXT]\n  jt ls [--json] [query]\n  jt set <name-or-ref> [--from-clipboard] [--description TEXT]\n  jt describe <name-or-ref> <description>\n  jt rm <name-or-ref>\n  jt mv <name-or-ref> <new-name>\n  jt resolve <name-or-ref> [--env NAME] --exec COMMAND [ARGS...]\n  jt env <namespace> -- COMMAND [ARGS...]\n  jt sync\n  jt status [--json]\n  jt version\n\nValues for add/set are read from stdin unless --from-clipboard is used.\nresolve without --exec prints the value and is intended for controlled use only.\ndescribe edits only metadata; pass an empty string to clear the description.\nDescriptions are plaintext, synced metadata; never put secrets in them.\nThe first nonempty description upgrades the vault to v2; upgrade all clients first.\nls --json prints id, ref, name, description, preview and timestamps; never ciphertext.\nstatus reports local vault state (uncommitted changes, commits not pushed) without network access.\n")
 }
 func paths() (string, string, string) {
 	home, err := os.UserHomeDir()

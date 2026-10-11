@@ -23,3 +23,16 @@ dest="${JT_INSTALL_DIR:-$HOME/.local/bin}"
 mkdir -p "$dest"
 install "$tmp/jt" "$dest/jt"
 printf '%s\n' "installed jt to $dest/jt"
+skills="${JT_SKILLS_DIR:-$HOME/.agents/skills}"
+skill="$skills/jiantieban-secret"
+if [ -d "$skills" ] && [ ! -L "$skill" ]; then
+  ref="main"; [ "$version" = latest ] || ref="$version"
+  mkdir -p "$skill"
+  if curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/skills/jiantieban-secret/SKILL.md" -o "$skill/SKILL.md.tmp"; then
+    mv "$skill/SKILL.md.tmp" "$skill/SKILL.md"
+    printf '%s\n' "installed agent skill to $skill"
+  else
+    rm -f "$skill/SKILL.md.tmp"
+    echo "jt: could not fetch agent skill; skipped" >&2
+  fi
+fi

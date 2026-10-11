@@ -27,7 +27,7 @@ jt sync
 
 The key file must be the existing 32-byte key for a vault that already contains `vault.json`; `jt` will not generate a replacement key for it.
 
-The installer downloads a published GitHub release; a change on `main` does not publish a release. To build this source version (0.3.0), use Go 1.24 or newer and `go build -o bin/jt ./cmd/jt`. Check `jt version` on every client before enabling descriptions.
+The installer downloads a published GitHub release; a change on `main` does not publish a release. To build this source version (0.3.0), use Go 1.24 or newer and `go build -o bin/jt ./cmd/jt`. Check `jt version` (or `jt --version`) on every client before enabling descriptions.
 
 Set `JT_VAULT_DIR` to the checked-out private vault and `JT_KEY_FILE` to a `0600` local master key when using a non-default layout. Copy the master key to each trusted machine out of band; never commit it to the vault.
 
@@ -76,7 +76,7 @@ Tests use temporary keys, vaults, and local Git remotes; they do not need or mod
 
 ## Agent skill
 
-`skills/jiantieban-secret/SKILL.md` teaches an agent to consume `jt://secret/<id>` references via `jt resolve --exec` (value goes only into the child process environment) and to name records with `jt mv`. Link or copy that directory into your agent's skills directory, e.g.:
+`skills/jiantieban-secret/SKILL.md` teaches an agent to consume `jt://secret/<id>` references via `jt resolve --exec` (value goes only into the child process environment) and to name records with `jt mv`. `install.sh` copies it into `~/.agents/skills` (override with `JT_SKILLS_DIR`) when that directory already exists and the skill is not a symlink. Otherwise link or copy it yourself, e.g.:
 
 ```sh
 ln -s "$PWD/skills/jiantieban-secret" ~/.agents/skills/jiantieban-secret
